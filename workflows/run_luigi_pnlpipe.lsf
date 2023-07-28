@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Copy this file to your project folder (usually called run.lsf), 
+# edit as needed, and then start a cluster job by running: 
+#     bsub < run_luigi_pnlpipe.lsf
+
+# source pnlpipe3 environment
+source /data/pnl/soft/pnlpipe3/bashrc3
+
+# copy and edit /data/pnl/soft/pnlpipe3/luigi-pnlpipe/params/*/*.cfg
+export LUIGI_CONFIG_PATH=/path/to/your/pipe_params.cfg
+
+caselist=/path/to/caselist.txt
+sessions=/path/to/sessions.txt
+
+# replace NUM_CASES, NUM_PARALLEL, big-multi, and NUM_CORES variables as required by your data
+
+#BSUB -J luigi-pnlpipe[1-NUM_CASES]%NUM_PARALLEL
+#BSUB -o ~/luigi-pnlpipe-%J-%I.out
+#BSUB -e ~/luigi-pnlpipe-%J-%I.err
+#BSUB -q big-multi
+#BSUB -R rusage[mem=16000]
+#BSUB -n NUM_CORES
+
+
+# run command
+if [ -f ${caselist} ]
+then
+    # LSF script, list of subjects
+    id=`head -${LSB_JOBINDEX} ${caselist} | tail -1`
+else
+    # shell script, one subject
+    id=${caselist}
+fi
+
+/data/pnl/soft/pnlpipe3/luigi-pnlpipe/exec/ExecuteTask --task Freesurfer \
+--bids-data-dir /data/pnl/DIAGNOSE_CTE_U01/rawdata \
+--t1-template sub-*/ses-*/anat/*_T1w.nii.gz \
+--t2-template sub-*/ses-*/anat/*_T2w.nii.gz \
+-c ${id} \
+-s ${sessions}
+
